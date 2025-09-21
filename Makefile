@@ -1,5 +1,6 @@
 CXX := g++
 CXXFLAGS := -Wall -O3 -Wextra -std=c++20 -Iinclude
+# CXXFLAGS := -Wall -Wextra -std=c++20 -Iinclude
 LDFLAGS :=
 
 SRC := $(wildcard src/*.cpp)

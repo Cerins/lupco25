@@ -1,10 +1,10 @@
-#include "optimization.hpp"
-#include "representation.hpp"
 #include <unordered_map>
-#include "bitset.hpp"
 #include <iostream>
 #include <numeric>
 #include <random>
+#include "optimization.hpp"
+#include "representation.hpp"
+#include "bitset.hpp"
 
 int errorScore(const Graph& graph) {
     int totalError = 0;
@@ -47,29 +47,40 @@ void basicFill(Graph& graph) {
     }
 }
 
-// For optimization we need to quickly calculate error score
-static int lahcErrorScore(
+static int lahcFlipScoreImpact(
     const Graph& graph,
-    const BitSet& bitset, 
-    const int* countNeighborLookup
+    const BitSet& bitset,
+    const int* countNeighborLookup,
+    const int* bitsetImpactLookup,
+    int flipIndex
 ) {
-    int totalError = 0;
-    for (size_t i = 0; i < graph.counts.size(); i++) {
-        const Count& count = graph.counts[i];
+    // newError - currentError
+    int delta = 0;
+    const int rowStart = flipIndex * 8;
+    for (int slot = 0; slot < 8; ++slot) {
+        int countIndex = bitsetImpactLookup[rowStart + slot];
+        if (countIndex == -1) {
+            // No more counts affected by this bomb
+            break;
+        }
+        const Count& count = graph.counts[countIndex];
         unsigned int armedNeighbors = 0;
-        for (size_t j = 0; j < 8; j++) {
-            int bitsetIndex = countNeighborLookup[i * 8 + j];
-            if (bitsetIndex != -1 && bitset.at(bitsetIndex)) {
-                armedNeighbors++;
+        for (int j = 0; j < 8; ++j) {
+            int idx = countNeighborLookup[countIndex * 8 + j];
+            if (idx != -1 && bitset.at(idx)) {
+                ++armedNeighbors;
             }
         }
-        if (armedNeighbors < count.count) {
-            totalError += (count.count - armedNeighbors);
-        } else if (armedNeighbors > count.count) {
-            totalError += (armedNeighbors - count.count);
+        const int currentError = abs(int(count.count) - int(armedNeighbors));
+        if (bitset.at(flipIndex)) {
+            --armedNeighbors;
+        } else {
+            ++armedNeighbors;
         }
+        const int newError = abs(int(count.count) - int(armedNeighbors));
+        delta += (newError - currentError); // IMPORTANT: new - current
     }
-    return totalError;
+    return delta;
 }
 
 
@@ -81,17 +92,18 @@ struct FlipResult {
 int flipIndex(
     const Graph& graph,
     BitSet& bitset,
-    const int* countNeighborLookup
+    const int* countNeighborLookup,
+    const int* bitsetImpactLookup
 ) {
-    int currentScore = lahcErrorScore(graph, bitset, countNeighborLookup);
+    // int currentScore = lahcErrorScore(graph, bitset, countNeighborLookup);
     int bitAmount = graph.bombs.size();
     std::vector<float> weights(bitAmount);
     float minWeight = 0.0f;
 
     for (int i = 0; i < bitAmount; i++) {
         bitset.set(i, !bitset.at(i));
-        int newScore = lahcErrorScore(graph, bitset, countNeighborLookup);
-        float diff = float(currentScore - newScore);
+        // int newScore = lahcErrorScore(graph, bitset, countNeighborLookup);
+        float diff = lahcFlipScoreImpact(graph, bitset, countNeighborLookup, bitsetImpactLookup, i);
         if (diff < 0) diff = 0;
         weights[i] = diff;
         bitset.set(i, !bitset.at(i));
@@ -115,20 +127,21 @@ int flipIndex(
     return dist(rng);
 }
 
-
+static void randomFill(Graph& graph) {
+    for (auto& [key, bomb] : graph.bombs) {
+        float r  = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+        bomb.armed = (r < 0.5f);
+    }
+}
 
 void lahcFill(Graph& graph, const LahcOptions& options) {
     // Allocate memory for previous scores
     int* previousScores = new int[options.scoreMemorySize];
-    // TODO: Implement the rest of the algorithm
+    // Initial setup -> random fill
+    randomFill(graph);
     int bombCount = graph.bombs.size();
     if(bombCount != 0) {
         BitSet current(bombCount);
-        // Do an initial fill - randomly with 1/2
-        for(int i = 0; i < bombCount; i++) {
-            double r = (double)rand() / RAND_MAX;
-            current.set(i, r < 0.5 ); // 1/2 chance
-        }
         unordered_map<i64, int> bombIndexMap;
         int cbitSetIndex = 0;
         int currentScore = errorScore(graph);
@@ -140,6 +153,10 @@ void lahcFill(Graph& graph, const LahcOptions& options) {
         // This will require an array of ints of size 8 since 0-7 are for count 0, 8-15 for count 1 and so on
         int countNeighborLookupSize = 8 * graph.counts.size();
         int* countNeighborLookup = new int[countNeighborLookupSize];
+        int bitsetImpactLookupSize = 8 * bombCount ;
+        // Lookup the neighboring numbers in the bitset, init with -1 to indicate no neighbor
+        int* bitsetImpactLookup = new int[bitsetImpactLookupSize];
+        fill(bitsetImpactLookup, bitsetImpactLookup + bitsetImpactLookupSize, -1);
         for(size_t i = 0; i < graph.counts.size(); i++) {
             const Count& count = graph.counts[i];
             for(size_t j = 0; j < 8; j++) {
@@ -152,7 +169,16 @@ void lahcFill(Graph& graph, const LahcOptions& options) {
                         }
                         cbitSetIndex++;
                     }
-                    countNeighborLookup[i * 8 + j] = bombIndexMap[key];
+                    int index = bombIndexMap[key];
+                    countNeighborLookup[i * 8 + j] = index;
+                    int row = index * 8;
+                    int slot = 0;
+                    while (slot < 8 && bitsetImpactLookup[row + slot] != -1) {
+                        ++slot;
+                    }
+                    if (slot < 8) {
+                        bitsetImpactLookup[row + slot] = static_cast<int>(i); // this bomb affects count i
+                    }
                 } else {
                     // No neighbor
                     countNeighborLookup[i * 8 + j] = -1;
@@ -166,10 +192,10 @@ void lahcFill(Graph& graph, const LahcOptions& options) {
         BitSet best = current;
         for(int iteration = 0; iteration < options.maxIterations; iteration++) {
             // Flip a random bit
-            int fli = flipIndex(graph, current, countNeighborLookup);
+            int fli = flipIndex(graph, current, countNeighborLookup, bitsetImpactLookup);
+            int newScore = currentScore + lahcFlipScoreImpact(graph, current, countNeighborLookup, bitsetImpactLookup, fli);
             current.set(fli, !current.at(fli));
-            int newScore = lahcErrorScore(graph, current, countNeighborLookup);
-            cout << "Iteration " << iteration << " score: " << newScore << endl;
+            // cout << "Iteration " << iteration << " score: " << newScore << endl;
             if(newScore <= bestScore) {
                 bestScore = newScore;
                 best = current;
@@ -196,6 +222,7 @@ void lahcFill(Graph& graph, const LahcOptions& options) {
             }
         }
         delete[] countNeighborLookup;
+        delete[] bitsetImpactLookup;
     }
     // Nothing else to do
     delete[] previousScores;

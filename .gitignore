@@ -1,0 +1,22 @@
+# Build artifacts
+/build/
+/bin/
+
+# Misc dir
+/misc/
+
+# Common backup / temp files
+*.swp
+*.swo
+*~
+*.tmp
+
+# Object files, libraries, executables
+*.o
+*.a
+*.so
+*.out
+*.exe
+
+
+

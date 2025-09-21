@@ -40,10 +40,6 @@ int main() {
     int endScore = errorScore(g);
     dumpGraph(g);
     cout << "---" << endl;
-    // Graph e = fromBoard(b);
-    // basicFill(e);
-    // int naiveScore = errorScore(e);
-    // cout << "Naive score: " << naiveScore << endl;
     cout << "LAHC score: " << endScore << endl;
     return 0;
 }

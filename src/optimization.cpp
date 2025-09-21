@@ -120,12 +120,15 @@ int flipIndex(
 void lahcFill(Graph& graph, const LahcOptions& options) {
     // Allocate memory for previous scores
     int* previousScores = new int[options.scoreMemorySize];
-    // First we need an inital solution
-    basicFill(graph);
     // TODO: Implement the rest of the algorithm
     int bombCount = graph.bombs.size();
     if(bombCount != 0) {
         BitSet current(bombCount);
+        // Do an initial fill - randomly with 1/2
+        for(int i = 0; i < bombCount; i++) {
+            double r = (double)rand() / RAND_MAX;
+            current.set(i, r < 0.5 ); // 1/2 chance
+        }
         unordered_map<i64, int> bombIndexMap;
         int cbitSetIndex = 0;
         int currentScore = errorScore(graph);
@@ -166,7 +169,7 @@ void lahcFill(Graph& graph, const LahcOptions& options) {
             int fli = flipIndex(graph, current, countNeighborLookup);
             current.set(fli, !current.at(fli));
             int newScore = lahcErrorScore(graph, current, countNeighborLookup);
-            // cout << "Iteration " << iteration << " score: " << newScore << endl;
+            cout << "Iteration " << iteration << " score: " << newScore << endl;
             if(newScore <= bestScore) {
                 bestScore = newScore;
                 best = current;

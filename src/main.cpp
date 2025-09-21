@@ -32,14 +32,18 @@ int main() {
     LahcOptions opts;
     // Scale iterations with number of bombs
     // Each bomb has k iterations
-    opts.maxIterations = 2 * g.bombs.size();
-    opts.scoreMemorySize = (int)((float)g.bombs.size() * 0.2);
-    int score = errorScore(g);
+    int k = 50;
+    float toMemory = 0.25f;
+    opts.maxIterations = k * g.bombs.size();
+    opts.scoreMemorySize = (int)((float)g.bombs.size() * (float)k * toMemory);
     lahcFill(g, opts);
     int endScore = errorScore(g);
     dumpGraph(g);
     cout << "---" << endl;
-    cout << "Initial score: " << score << endl;
-    cout << "Final score: " << endScore << endl;
+    // Graph e = fromBoard(b);
+    // basicFill(e);
+    // int naiveScore = errorScore(e);
+    // cout << "Naive score: " << naiveScore << endl;
+    cout << "LAHC score: " << endScore << endl;
     return 0;
 }

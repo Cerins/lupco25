@@ -1,15 +1,13 @@
-# Minesweeper Consistency Problem Optimization
+# Minesweeper Constraint Satisfaction Problem
 
 ## What is this?
 
-This repository contains the code for optimizing the solution to the Minesweeper Consistency Problem.
+This repository contains the code for optimizing the solution to the Minesweeper Constraint Satisfaction Problem.
 
-The Minesweeper Consistency Problem is where given a Minesweeper board with numbers filled out, output a board with mines placed such that the numbers are correct. If that is not possible, then output the fact.
+The Minesweeper Constraint Satisfaction Problem is where given a Minesweeper board with numbers filled out, output a board with mines placed such that the numbers are correct. If that is not possible, then output the fact.
 
-Since that problem is NP-complete, this code attempts to find solution that is "close enough".
+[Since that problem is NP-complete](https://ocw.mit.edu/courses/es-268-the-mathematics-in-toys-and-games-spring-2010/50a061a2f76a503d8473a072965bc8ff_MITES_268S10_ses11_slides.pdf), this code attempts to find solution that is "close enough".
 This is done by trying to minimize the board's error, using the Late Acceptance Hill Climbing algorithm.
-
-
 
 ## How to compile?
 
@@ -50,7 +48,11 @@ The way the standard input gets parsed into the graph representation and back is
 
 ### Performance
 
+Can be tested by running `python3 ./tests/speed.py`.
+
 ### Correctness
+
+Can be tested by running `python3 ./tests/correctness.py`.
 
 ### Unit tests
 

@@ -17,7 +17,10 @@ This is done by trying to minimize the board's error, using the Late Acceptance 
 
 ### Windows
 
-Either use WSL, or manually compile and link with the system's C++ toolset.
+If g++ is in your PATH, then you can run `build.bat` while being in this directory.
+
+
+Alternatively, you can download prebuilt binaries from the releases page.
 
 ## How to run?
 
@@ -37,6 +40,12 @@ The expected input format is:
 
 You can either pipe in the input in, or input it manually.
 When you are done inputting the board, press Ctrl+D to signal EOF.
+
+### Windows
+
+`bin\sweeper.exe`
+
+Instead of Ctrl+D, press Ctrl+Z + Enter to signal EOF.
 
 ## Structure of the code
 

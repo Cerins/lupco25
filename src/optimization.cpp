@@ -2,6 +2,7 @@
 #include <iostream>
 #include <numeric>
 #include <random>
+#include <algorithm>
 #include "optimization.hpp"
 #include "representation.hpp"
 #include "bitset.hpp"
